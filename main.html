@@ -1,0 +1,718 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>S&P 500 Retirement Calculator — CAD</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Mono:wght@400;500&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --bg: #0d0f14;
+    --bg2: #13161e;
+    --bg3: #1a1e28;
+    --border: rgba(255,255,255,0.07);
+    --border2: rgba(255,255,255,0.13);
+    --text: #f0ede8;
+    --text2: #8a8d96;
+    --text3: #555a66;
+    --accent: #c9a96e;
+    --accent2: #e8d5b0;
+    --red: #e05252;
+    --amber: #d4903a;
+    --blue: #5b9bd5;
+    --green: #4daa7d;
+    --red-bg: rgba(224,82,82,0.08);
+    --amber-bg: rgba(212,144,58,0.08);
+    --blue-bg: rgba(91,155,213,0.08);
+    --green-bg: rgba(77,170,125,0.08);
+    --radius: 12px;
+    --radius-sm: 8px;
+  }
+
+  html { font-size: 16px; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'DM Sans', sans-serif;
+    font-weight: 300;
+    min-height: 100vh;
+    line-height: 1.6;
+  }
+
+  /* Subtle grid background */
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background-image:
+      linear-gradient(rgba(201,169,110,0.03) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(201,169,110,0.03) 1px, transparent 1px);
+    background-size: 48px 48px;
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  .container {
+    max-width: 960px;
+    margin: 0 auto;
+    padding: 0 24px 80px;
+    position: relative;
+    z-index: 1;
+  }
+
+  /* Header */
+  header {
+    padding: 64px 0 48px;
+    border-bottom: 1px solid var(--border);
+    margin-bottom: 48px;
+  }
+
+  .eyebrow {
+    font-family: 'DM Mono', monospace;
+    font-size: 11px;
+    letter-spacing: 0.18em;
+    color: var(--accent);
+    text-transform: uppercase;
+    margin-bottom: 16px;
+  }
+
+  h1 {
+    font-family: 'DM Serif Display', serif;
+    font-size: clamp(32px, 5vw, 52px);
+    font-weight: 400;
+    line-height: 1.1;
+    color: var(--text);
+    margin-bottom: 16px;
+  }
+
+  h1 em {
+    font-style: italic;
+    color: var(--accent);
+  }
+
+  .subtitle {
+    font-size: 15px;
+    color: var(--text2);
+    max-width: 520px;
+    line-height: 1.7;
+  }
+
+  /* Section headings */
+  .section-label {
+    font-family: 'DM Mono', monospace;
+    font-size: 10px;
+    letter-spacing: 0.16em;
+    color: var(--text3);
+    text-transform: uppercase;
+    margin-bottom: 20px;
+  }
+
+  /* Controls */
+  .controls-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 32px 48px;
+    margin-bottom: 40px;
+    padding: 32px;
+    background: var(--bg2);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+  }
+
+  .ctrl-group { display: flex; flex-direction: column; gap: 10px; }
+
+  .ctrl-top {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+  }
+
+  .ctrl-name {
+    font-size: 13px;
+    color: var(--text2);
+    letter-spacing: 0.01em;
+  }
+
+  .ctrl-val {
+    font-family: 'DM Mono', monospace;
+    font-size: 18px;
+    font-weight: 500;
+    color: var(--accent2);
+  }
+
+  input[type=range] {
+    -webkit-appearance: none;
+    width: 100%;
+    height: 2px;
+    background: var(--border2);
+    border-radius: 2px;
+    outline: none;
+    cursor: pointer;
+  }
+
+  input[type=range]::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    width: 16px;
+    height: 16px;
+    border-radius: 50%;
+    background: var(--accent);
+    border: 2px solid var(--bg);
+    box-shadow: 0 0 0 3px rgba(201,169,110,0.2);
+    transition: box-shadow 0.15s;
+  }
+
+  input[type=range]:hover::-webkit-slider-thumb {
+    box-shadow: 0 0 0 5px rgba(201,169,110,0.25);
+  }
+
+  /* Portfolio pills */
+  .portfolio-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-wrap: wrap;
+    margin-bottom: 32px;
+  }
+
+  .port-label {
+    font-size: 13px;
+    color: var(--text2);
+    margin-right: 4px;
+  }
+
+  .port-btn {
+    padding: 7px 18px;
+    font-size: 13px;
+    font-family: 'DM Mono', monospace;
+    border: 1px solid var(--border2);
+    border-radius: 100px;
+    cursor: pointer;
+    background: transparent;
+    color: var(--text2);
+    transition: all 0.15s;
+    letter-spacing: 0.02em;
+  }
+
+  .port-btn:hover { border-color: var(--accent); color: var(--accent); }
+
+  .port-btn.active {
+    background: rgba(201,169,110,0.12);
+    border-color: var(--accent);
+    color: var(--accent2);
+    font-weight: 500;
+  }
+
+  .custom-input {
+    width: 120px;
+    padding: 7px 12px;
+    font-size: 13px;
+    font-family: 'DM Mono', monospace;
+    background: var(--bg2);
+    border: 1px solid var(--border2);
+    border-radius: 100px;
+    color: var(--text);
+    outline: none;
+    display: none;
+    letter-spacing: 0.02em;
+  }
+
+  .custom-input:focus { border-color: var(--accent); }
+
+  /* Head start banner */
+  .banner {
+    padding: 14px 20px;
+    background: rgba(201,169,110,0.07);
+    border: 1px solid rgba(201,169,110,0.2);
+    border-radius: var(--radius-sm);
+    font-size: 13px;
+    color: var(--text2);
+    margin-bottom: 32px;
+    display: none;
+    line-height: 1.8;
+  }
+
+  .banner strong { color: var(--accent2); font-weight: 500; }
+
+  /* Tabs */
+  .tabs {
+    display: flex;
+    gap: 4px;
+    margin-bottom: 24px;
+    background: var(--bg2);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    padding: 4px;
+    width: fit-content;
+  }
+
+  .tab {
+    padding: 8px 20px;
+    font-size: 13px;
+    font-family: 'DM Sans', sans-serif;
+    border: none;
+    border-radius: 6px;
+    cursor: pointer;
+    background: transparent;
+    color: var(--text2);
+    transition: all 0.15s;
+  }
+
+  .tab.active {
+    background: var(--bg3);
+    color: var(--text);
+    font-weight: 500;
+  }
+
+  /* Legend */
+  .legend {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 16px 24px;
+    margin-bottom: 20px;
+  }
+
+  .leg-item {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 12px;
+    color: var(--text2);
+  }
+
+  .leg-dot {
+    width: 24px;
+    height: 3px;
+    border-radius: 2px;
+    flex-shrink: 0;
+  }
+
+  /* Chart */
+  .chart-outer {
+    background: var(--bg2);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 28px;
+    margin-bottom: 32px;
+  }
+
+  .chart-wrap {
+    position: relative;
+    width: 100%;
+    height: 320px;
+  }
+
+  /* Cards */
+  .cards {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 12px;
+    margin-bottom: 48px;
+  }
+
+  .card {
+    padding: 20px;
+    border-radius: var(--radius);
+    border: 1px solid var(--border);
+    transition: border-color 0.2s;
+  }
+
+  .card:hover { border-color: var(--border2); }
+
+  .card-stripe {
+    width: 28px;
+    height: 3px;
+    border-radius: 2px;
+    margin-bottom: 16px;
+  }
+
+  .card-nest {
+    font-family: 'DM Mono', monospace;
+    font-size: 22px;
+    font-weight: 500;
+    color: var(--text);
+    margin-bottom: 4px;
+    letter-spacing: -0.02em;
+  }
+
+  .card-lbl {
+    font-size: 11px;
+    color: var(--text3);
+    margin-bottom: 12px;
+  }
+
+  .card-divider {
+    height: 1px;
+    background: var(--border);
+    margin-bottom: 12px;
+  }
+
+  .card-scenario {
+    font-size: 11px;
+    color: var(--text2);
+    margin-bottom: 4px;
+    line-height: 1.5;
+  }
+
+  .card-ms {
+    font-family: 'DM Mono', monospace;
+    font-size: 16px;
+    font-weight: 500;
+    margin-top: 6px;
+  }
+
+  .card-ms-label { font-size: 11px; color: var(--text3); margin-top: 2px; }
+
+  .covered-badge {
+    display: inline-block;
+    padding: 3px 10px;
+    background: rgba(77,170,125,0.15);
+    color: var(--green);
+    border-radius: 100px;
+    font-size: 11px;
+    font-family: 'DM Mono', monospace;
+    margin-top: 6px;
+  }
+
+  /* Assumptions table */
+  .assumptions {
+    background: var(--bg2);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    overflow: hidden;
+  }
+
+  .asm-row {
+    display: grid;
+    grid-template-columns: 2fr 1fr 1fr 1fr;
+    gap: 16px;
+    padding: 14px 20px;
+    border-bottom: 1px solid var(--border);
+    align-items: center;
+    font-size: 13px;
+  }
+
+  .asm-row:last-child { border-bottom: none; }
+
+  .asm-header {
+    font-family: 'DM Mono', monospace;
+    font-size: 10px;
+    letter-spacing: 0.1em;
+    color: var(--text3);
+    text-transform: uppercase;
+  }
+
+  .asm-val {
+    font-family: 'DM Mono', monospace;
+    font-size: 13px;
+    color: var(--text2);
+  }
+
+  /* Footer */
+  footer {
+    margin-top: 64px;
+    padding-top: 24px;
+    border-top: 1px solid var(--border);
+    font-size: 12px;
+    color: var(--text3);
+    line-height: 1.8;
+  }
+
+  @media (max-width: 640px) {
+    .controls-grid { grid-template-columns: 1fr; gap: 24px; padding: 24px; }
+    .cards { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    .asm-row { grid-template-columns: 1fr 1fr; }
+    .asm-row .asm-header:nth-child(3), .asm-row .asm-val:nth-child(3),
+    .asm-row .asm-header:nth-child(4), .asm-row .asm-val:nth-child(4) { display: none; }
+  }
+</style>
+</head>
+<body>
+<div class="container">
+  <header>
+    <div class="eyebrow">S&amp;P 500 · Retirement Calculator · CAD</div>
+    <h1>How much do you need<br>to <em>never work again?</em></h1>
+    <p class="subtitle">Calculate the nest egg required to generate $5,000/month (inflation-adjusted) in retirement — across optimistic and pessimistic scenarios for S&P 500 returns and inflation.</p>
+  </header>
+
+  <div class="section-label">Your inputs</div>
+  <div class="controls-grid">
+    <div class="ctrl-group">
+      <div class="ctrl-top">
+        <span class="ctrl-name">Monthly withdrawal (today's dollars)</span>
+        <span class="ctrl-val" id="lbl-monthly">$5,000</span>
+      </div>
+      <input type="range" min="1000" max="15000" step="500" value="5000" id="sl-monthly">
+    </div>
+    <div class="ctrl-group">
+      <div class="ctrl-top">
+        <span class="ctrl-name">Retirement age</span>
+        <span class="ctrl-val" id="lbl-retire">65</span>
+      </div>
+      <input type="range" min="50" max="75" step="1" value="65" id="sl-retire">
+    </div>
+    <div class="ctrl-group">
+      <div class="ctrl-top">
+        <span class="ctrl-name">Current age</span>
+        <span class="ctrl-val" id="lbl-age">37</span>
+      </div>
+      <input type="range" min="20" max="60" step="1" value="37" id="sl-age">
+    </div>
+    <div class="ctrl-group">
+      <div class="ctrl-top">
+        <span class="ctrl-name">Retirement duration (years)</span>
+        <span class="ctrl-val" id="lbl-dur">30</span>
+      </div>
+      <input type="range" min="10" max="50" step="5" value="30" id="sl-dur">
+    </div>
+  </div>
+
+  <div class="portfolio-row">
+    <span class="port-label">Current portfolio:</span>
+    <button class="port-btn active" data-val="0">$0</button>
+    <button class="port-btn" data-val="50000">$50K</button>
+    <button class="port-btn" data-val="100000">$100K</button>
+    <button class="port-btn" data-val="custom">Custom ↓</button>
+    <input type="number" id="custom-input" class="custom-input" min="0" max="5000000" step="1000" value="0" placeholder="Enter amount">
+  </div>
+
+  <div class="banner" id="banner"></div>
+
+  <div class="tabs">
+    <button class="tab active" data-view="nest">Nest egg needed</button>
+    <button class="tab" data-view="save">Monthly savings needed</button>
+  </div>
+
+  <div class="chart-outer">
+    <div class="legend" id="legend"></div>
+    <div class="chart-wrap"><canvas id="mainChart"></canvas></div>
+  </div>
+
+  <div class="section-label">Key numbers at retirement</div>
+  <div class="cards" id="cards"></div>
+
+  <div class="section-label">Scenario assumptions</div>
+  <div class="assumptions">
+    <div class="asm-row">
+      <span class="asm-header">Scenario</span>
+      <span class="asm-header">Inflation</span>
+      <span class="asm-header">S&amp;P 500 return</span>
+      <span class="asm-header">Withdrawal/yr at retirement</span>
+    </div>
+    <div id="asmp-rows"></div>
+  </div>
+
+  <footer>
+    <strong style="color:var(--text2)">Methodology</strong> — Nest egg calculated using the present value of an inflation-adjusted annuity (safe withdrawal rate model). S&amp;P 500 returns are nominal total returns (dividends reinvested). Withdrawals are adjusted annually for inflation. Monthly savings use future value of annuity formula. This is for educational purposes only — not financial advice. Past performance does not guarantee future results.
+  </footer>
+</div>
+
+<script>
+const SCENARIOS = [
+  { id:'pp', label:'Pess. inf + Pess. returns', fullLabel:'Pessimistic inflation + Pessimistic returns', color:'#e05252', bgColor:'rgba(224,82,82,0.08)', inf:0.04, ret:0.07 },
+  { id:'op', label:'Opt. inf + Pess. returns',  fullLabel:'Optimistic inflation + Pessimistic returns',  color:'#d4903a', bgColor:'rgba(212,144,58,0.08)',   inf:0.02, ret:0.07 },
+  { id:'po', label:'Pess. inf + Opt. returns',  fullLabel:'Pessimistic inflation + Optimistic returns',  color:'#5b9bd5', bgColor:'rgba(91,155,213,0.08)',  inf:0.04, ret:0.10 },
+  { id:'oo', label:'Opt. inf + Opt. returns',   fullLabel:'Optimistic inflation + Optimistic returns',   color:'#4daa7d', bgColor:'rgba(77,170,125,0.08)',  inf:0.02, ret:0.10 },
+];
+
+function fmtK(n) {
+  n = Math.round(n);
+  if (n >= 1e6) return '$' + (n/1e6).toFixed(2) + 'M';
+  if (n >= 1000) return '$' + (n/1000).toFixed(0) + 'K';
+  return '$' + n;
+}
+function fmt(n) { return '$' + Math.round(n).toLocaleString('en-CA'); }
+
+function nestEgg(monthly, years, inf, ret, dur) {
+  const annualAtRetire = monthly * 12 * Math.pow(1 + inf, years);
+  const realRet = (ret - inf) / (1 + inf);
+  if (Math.abs(realRet) < 0.0001) return annualAtRetire * dur;
+  return annualAtRetire * (1 - Math.pow(1 + realRet, -dur)) / realRet;
+}
+
+function fvExisting(current, years, ret) {
+  return current * Math.pow(1 + ret, years);
+}
+
+function monthlySavings(nest, existing, years, ret) {
+  if (years <= 0) return Math.max(0, nest - existing);
+  const fv = fvExisting(existing, years, ret);
+  const gap = Math.max(0, nest - fv);
+  if (gap <= 0) return 0;
+  const r = ret / 12;
+  const n = years * 12;
+  return gap * r / (Math.pow(1 + r, n) - 1);
+}
+
+let chart;
+let currentPortfolio = 0;
+
+function render() {
+  const monthly = +document.getElementById('sl-monthly').value;
+  const retireAge = +document.getElementById('sl-retire').value;
+  const age = +document.getElementById('sl-age').value;
+  const dur = +document.getElementById('sl-dur').value;
+  const years = Math.max(retireAge - age, 0);
+  const view = document.querySelector('.tab.active').dataset.view;
+
+  document.getElementById('lbl-monthly').textContent = fmt(monthly);
+  document.getElementById('lbl-retire').textContent = retireAge;
+  document.getElementById('lbl-age').textContent = age;
+  document.getElementById('lbl-dur').textContent = dur;
+
+  const labels = Array.from({length: years + 1}, (_, i) => age + i);
+  const datasets = [];
+  const cardData = [];
+
+  for (const s of SCENARIOS) {
+    const nest = nestEgg(monthly, years, s.inf, s.ret, dur);
+    const data = [];
+    for (let yr = 0; yr <= years; yr++) {
+      const yrsLeft = years - yr;
+      if (view === 'nest') {
+        const lumpNeeded = nest / Math.pow(1 + s.ret, yrsLeft);
+        const grown = fvExisting(currentPortfolio, yr, s.ret);
+        data.push(Math.round(Math.max(0, lumpNeeded - grown)));
+      } else {
+        if (yrsLeft <= 0) { data.push(0); continue; }
+        const ms = monthlySavings(nest, currentPortfolio, yrsLeft, s.ret);
+        data.push(Math.round(ms));
+      }
+    }
+    datasets.push({
+      label: s.label,
+      data,
+      borderColor: s.color,
+      backgroundColor: s.bgColor,
+      fill: view === 'save',
+      tension: 0.4,
+      pointRadius: 0,
+      borderWidth: 2
+    });
+    const ms = monthlySavings(nest, currentPortfolio, years, s.ret);
+    const fv = fvExisting(currentPortfolio, years, s.ret);
+    cardData.push({ s, nest, ms, fv, covered: fv >= nest });
+  }
+
+  if (chart) chart.destroy();
+  chart = new Chart(document.getElementById('mainChart'), {
+    type: 'line',
+    data: { labels, datasets },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      interaction: { mode: 'index', intersect: false },
+      plugins: {
+        legend: { display: false },
+        tooltip: {
+          backgroundColor: '#1a1e28',
+          borderColor: 'rgba(255,255,255,0.1)',
+          borderWidth: 1,
+          titleColor: '#f0ede8',
+          bodyColor: '#8a8d96',
+          padding: 12,
+          callbacks: {
+            label: ctx => '  ' + ctx.dataset.label + ': ' + fmtK(ctx.parsed.y),
+            title: ctx => 'Age ' + ctx[0].label
+          }
+        }
+      },
+      scales: {
+        x: {
+          grid: { color: 'rgba(255,255,255,0.04)' },
+          ticks: { color: '#555a66', font: { size: 11, family: 'DM Mono' }, autoSkip: true, maxTicksLimit: 10 },
+          border: { color: 'rgba(255,255,255,0.07)' }
+        },
+        y: {
+          min: 0,
+          grid: { color: 'rgba(255,255,255,0.04)' },
+          ticks: { callback: v => fmtK(v), color: '#555a66', font: { size: 11, family: 'DM Mono' } },
+          border: { color: 'rgba(255,255,255,0.07)' }
+        }
+      }
+    }
+  });
+
+  document.getElementById('legend').innerHTML = SCENARIOS.map(s =>
+    `<span class="leg-item"><span class="leg-dot" style="background:${s.color}"></span>${s.label}</span>`
+  ).join('');
+
+  document.getElementById('cards').innerHTML = cardData.map(({s, nest, ms, fv, covered}) => `
+    <div class="card" style="background:${s.bgColor}">
+      <div class="card-stripe" style="background:${s.color}"></div>
+      <div class="card-nest">${fmtK(nest)}</div>
+      <div class="card-lbl">needed at age ${retireAge}</div>
+      ${currentPortfolio > 0 ? `<div style="font-size:11px;color:var(--text3);margin-bottom:8px;">Your ${fmtK(currentPortfolio)} → <span style="color:var(--text2)">${fmtK(fv)}</span></div>` : ''}
+      <div class="card-divider"></div>
+      <div class="card-scenario">${s.label}</div>
+      ${covered
+        ? '<span class="covered-badge">already covered</span>'
+        : `<div class="card-ms" style="color:${s.color}">${fmtK(ms)}<span style="font-size:11px;font-weight:400;color:var(--text3)">/mo</span></div><div class="card-ms-label">to save monthly</div>`
+      }
+    </div>`).join('');
+
+  const banner = document.getElementById('banner');
+  if (currentPortfolio > 0) {
+    const parts = SCENARIOS.map(s => {
+      const nest = nestEgg(monthly, years, s.inf, s.ret, dur);
+      const ms0 = monthlySavings(nest, 0, years, s.ret);
+      const ms1 = monthlySavings(nest, currentPortfolio, years, s.ret);
+      const saving = Math.max(0, Math.round(ms0 - ms1));
+      return `<span style="color:${s.color}">${s.label}</span>: saves <strong>${fmtK(saving)}/mo</strong>`;
+    });
+    banner.innerHTML = `Your ${fmtK(currentPortfolio)} head start reduces required monthly savings — ` + parts.join(' &nbsp;·&nbsp; ');
+    banner.style.display = 'block';
+  } else {
+    banner.style.display = 'none';
+  }
+
+  document.getElementById('asmp-rows').innerHTML = SCENARIOS.map(s => {
+    const annualAtRetire = Math.round(monthly * 12 * Math.pow(1 + s.inf, years));
+    return `<div class="asm-row">
+      <span style="color:${s.color};font-size:13px;">${s.fullLabel}</span>
+      <span class="asm-val">${(s.inf*100).toFixed(0)}%/yr</span>
+      <span class="asm-val">${(s.ret*100).toFixed(0)}%/yr</span>
+      <span class="asm-val">${fmtK(annualAtRetire)}/yr</span>
+    </div>`;
+  }).join('');
+}
+
+document.querySelectorAll('input[type=range]').forEach(el => el.addEventListener('input', render));
+
+document.querySelectorAll('.tab').forEach(tab => {
+  tab.addEventListener('click', () => {
+    document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+    tab.classList.add('active');
+    render();
+  });
+});
+
+document.querySelectorAll('.port-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    document.querySelectorAll('.port-btn').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    const ci = document.getElementById('custom-input');
+    if (btn.dataset.val === 'custom') {
+      ci.style.display = 'inline-block';
+      currentPortfolio = +ci.value || 0;
+    } else {
+      ci.style.display = 'none';
+      currentPortfolio = +btn.dataset.val;
+    }
+    render();
+  });
+});
+
+document.getElementById('custom-input').addEventListener('input', function() {
+  currentPortfolio = +this.value || 0;
+  render();
+});
+
+render();
+</script>
+</body>
+</html>
