@@ -44,7 +44,6 @@
     line-height: 1.6;
   }
 
-  /* Subtle grid background */
   body::before {
     content: '';
     position: fixed;
@@ -65,7 +64,6 @@
     z-index: 1;
   }
 
-  /* Header */
   header {
     padding: 64px 0 48px;
     border-bottom: 1px solid var(--border);
@@ -102,7 +100,6 @@
     line-height: 1.7;
   }
 
-  /* Section headings */
   .section-label {
     font-family: 'DM Mono', monospace;
     font-size: 10px;
@@ -112,7 +109,6 @@
     margin-bottom: 20px;
   }
 
-  /* Controls */
   .controls-grid {
     display: grid;
     grid-template-columns: repeat(2, 1fr);
@@ -170,7 +166,6 @@
     box-shadow: 0 0 0 5px rgba(201,169,110,0.25);
   }
 
-  /* Portfolio pills */
   .portfolio-row {
     display: flex;
     align-items: center;
@@ -223,7 +218,6 @@
 
   .custom-input:focus { border-color: var(--accent); }
 
-  /* Head start banner */
   .banner {
     padding: 14px 20px;
     background: rgba(201,169,110,0.07);
@@ -238,7 +232,6 @@
 
   .banner strong { color: var(--accent2); font-weight: 500; }
 
-  /* Tabs */
   .tabs {
     display: flex;
     gap: 4px;
@@ -268,7 +261,6 @@
     font-weight: 500;
   }
 
-  /* Legend */
   .legend {
     display: flex;
     flex-wrap: wrap;
@@ -291,7 +283,6 @@
     flex-shrink: 0;
   }
 
-  /* Chart */
   .chart-outer {
     background: var(--bg2);
     border: 1px solid var(--border);
@@ -306,7 +297,6 @@
     height: 320px;
   }
 
-  /* Cards */
   .cards {
     display: grid;
     grid-template-columns: repeat(4, minmax(0, 1fr));
@@ -378,7 +368,6 @@
     margin-top: 6px;
   }
 
-  /* Assumptions table */
   .assumptions {
     background: var(--bg2);
     border: 1px solid var(--border);
@@ -412,7 +401,50 @@
     color: var(--text2);
   }
 
-  /* Footer */
+  /* Monte Carlo section */
+  .mc-section { margin-top: 72px; padding-top: 48px; border-top: 1px solid var(--border); }
+
+  .mc-controls {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 32px 48px;
+    margin-bottom: 32px;
+    padding: 32px;
+    background: var(--bg2);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+  }
+
+  .mc-success {
+    display: flex;
+    align-items: baseline;
+    gap: 16px;
+    padding: 24px 28px;
+    background: var(--bg2);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    margin-bottom: 24px;
+  }
+
+  .mc-success-num {
+    font-family: 'DM Mono', monospace;
+    font-size: 44px;
+    font-weight: 500;
+    letter-spacing: -0.02em;
+  }
+
+  .mc-success-label {
+    font-size: 13px;
+    color: var(--text2);
+  }
+
+  .mc-success-detail {
+    margin-left: auto;
+    font-size: 12px;
+    color: var(--text3);
+    font-family: 'DM Mono', monospace;
+  }
+
   footer {
     margin-top: 64px;
     padding-top: 24px;
@@ -423,11 +455,13 @@
   }
 
   @media (max-width: 640px) {
-    .controls-grid { grid-template-columns: 1fr; gap: 24px; padding: 24px; }
+    .controls-grid, .mc-controls { grid-template-columns: 1fr; gap: 24px; padding: 24px; }
     .cards { grid-template-columns: repeat(2, minmax(0, 1fr)); }
     .asm-row { grid-template-columns: 1fr 1fr; }
     .asm-row .asm-header:nth-child(3), .asm-row .asm-val:nth-child(3),
     .asm-row .asm-header:nth-child(4), .asm-row .asm-val:nth-child(4) { display: none; }
+    .mc-success { flex-direction: column; align-items: flex-start; gap: 4px; }
+    .mc-success-detail { margin-left: 0; }
   }
 </style>
 </head>
@@ -436,7 +470,7 @@
   <header>
     <div class="eyebrow">S&amp;P 500 · Retirement Calculator · CAD</div>
     <h1>How much do you need<br>to <em>never work again?</em></h1>
-    <p class="subtitle">Calculate the nest egg required to generate $5,000/month (inflation-adjusted) in retirement — across optimistic and pessimistic scenarios for S&P 500 returns and inflation.</p>
+    <p class="subtitle">Calculate the nest egg required to generate $5,000/month (inflation-adjusted) in retirement, across optimistic and pessimistic scenarios for S&P 500 returns and inflation.</p>
   </header>
 
   <div class="section-label">Your inputs</div>
@@ -506,8 +540,78 @@
     <div id="asmp-rows"></div>
   </div>
 
+  <!-- Monte Carlo simulation -->
+  <div class="mc-section">
+    <div class="eyebrow" style="margin-bottom:16px;">Monte Carlo · Sequence-of-returns risk</div>
+    <h1 style="font-size:clamp(24px,3.5vw,36px);margin-bottom:12px;">What if returns aren't smooth?</h1>
+    <p class="subtitle" style="margin-bottom:32px;">Run 1,000 simulated retirements. Each year, returns are drawn from a normal distribution. The order of bad years matters: a crash in year one is far worse than the same crash in year twenty.</p>
+
+    <div class="section-label">Simulation inputs</div>
+    <div class="mc-controls">
+      <div class="ctrl-group">
+        <div class="ctrl-top">
+          <span class="ctrl-name">Starting portfolio at retirement</span>
+          <span class="ctrl-val" id="lbl-mc-start">$1,000,000</span>
+        </div>
+        <input type="range" min="100000" max="5000000" step="50000" value="1000000" id="sl-mc-start">
+      </div>
+      <div class="ctrl-group">
+        <div class="ctrl-top">
+          <span class="ctrl-name">Expected annual return (mean)</span>
+          <span class="ctrl-val" id="lbl-mc-ret">7%</span>
+        </div>
+        <input type="range" min="0" max="15" step="0.5" value="7" id="sl-mc-ret">
+      </div>
+      <div class="ctrl-group">
+        <div class="ctrl-top">
+          <span class="ctrl-name">Volatility (stdev of returns)</span>
+          <span class="ctrl-val" id="lbl-mc-vol">15%</span>
+        </div>
+        <input type="range" min="0" max="40" step="1" value="15" id="sl-mc-vol">
+      </div>
+      <div class="ctrl-group">
+        <div class="ctrl-top">
+          <span class="ctrl-name">Initial withdrawal rate</span>
+          <span class="ctrl-val" id="lbl-mc-wr">4%</span>
+        </div>
+        <input type="range" min="2" max="10" step="0.25" value="4" id="sl-mc-wr">
+      </div>
+      <div class="ctrl-group">
+        <div class="ctrl-top">
+          <span class="ctrl-name">Years in retirement</span>
+          <span class="ctrl-val" id="lbl-mc-years">30</span>
+        </div>
+        <input type="range" min="10" max="50" step="1" value="30" id="sl-mc-years">
+      </div>
+      <div class="ctrl-group">
+        <div class="ctrl-top">
+          <span class="ctrl-name">Inflation adjustment</span>
+          <span class="ctrl-val" id="lbl-mc-inf">2.5%</span>
+        </div>
+        <input type="range" min="0" max="8" step="0.25" value="2.5" id="sl-mc-inf">
+      </div>
+    </div>
+
+    <div class="mc-success">
+      <div>
+        <div class="mc-success-num" id="mc-success-num">—</div>
+        <div class="mc-success-label">Success rate · portfolio survives all years</div>
+      </div>
+      <div class="mc-success-detail" id="mc-success-detail">1,000 simulated paths</div>
+    </div>
+
+    <div class="chart-outer">
+      <div class="legend">
+        <span class="leg-item"><span class="leg-dot" style="background:#e05252"></span>p10 (pessimistic)</span>
+        <span class="leg-item"><span class="leg-dot" style="background:#c9a96e"></span>p50 (median)</span>
+        <span class="leg-item"><span class="leg-dot" style="background:#4daa7d"></span>p90 (optimistic)</span>
+      </div>
+      <div class="chart-wrap"><canvas id="mcChart"></canvas></div>
+    </div>
+  </div>
+
   <footer>
-    <strong style="color:var(--text2)">Methodology</strong> — Nest egg calculated using the present value of an inflation-adjusted annuity (safe withdrawal rate model). S&amp;P 500 returns are nominal total returns (dividends reinvested). Withdrawals are adjusted annually for inflation. Monthly savings use future value of annuity formula. This is for educational purposes only — not financial advice. Past performance does not guarantee future results.
+    <strong style="color:var(--text2)">Methodology</strong> — Nest egg calculated using the present value of an inflation-adjusted annuity (safe withdrawal rate model). S&amp;P 500 returns are nominal total returns (dividends reinvested). Withdrawals are adjusted annually for inflation. Monthly savings use future value of annuity formula. The Monte Carlo section simulates 1,000 retirement paths, sampling annual returns from a normal distribution (Box-Muller transform) and tracking portfolio survival across the full retirement period. This is for educational purposes only — not financial advice. Past performance does not guarantee future results.
   </footer>
 </div>
 
@@ -681,7 +785,10 @@ function render() {
   }).join('');
 }
 
-document.querySelectorAll('input[type=range]').forEach(el => el.addEventListener('input', render));
+document.querySelectorAll('input[type=range]').forEach(el => {
+  if (el.id.startsWith('sl-mc-')) return;
+  el.addEventListener('input', render);
+});
 
 document.querySelectorAll('.tab').forEach(tab => {
   tab.addEventListener('click', () => {
@@ -712,7 +819,144 @@ document.getElementById('custom-input').addEventListener('input', function() {
   render();
 });
 
+// ---------- Monte Carlo simulation ----------
+// Box-Muller transform: convert two uniform [0,1) samples into one
+// standard-normal sample. We use this to draw annual returns from
+// N(mean, stdev) without pulling in any extra dependencies.
+function randn() {
+  let u = 0, v = 0;
+  while (u === 0) u = Math.random();
+  while (v === 0) v = Math.random();
+  return Math.sqrt(-2.0 * Math.log(u)) * Math.cos(2.0 * Math.PI * v);
+}
+
+function percentile(sortedArr, p) {
+  if (sortedArr.length === 0) return 0;
+  const idx = (p / 100) * (sortedArr.length - 1);
+  const lo = Math.floor(idx);
+  const hi = Math.ceil(idx);
+  if (lo === hi) return sortedArr[lo];
+  return sortedArr[lo] + (sortedArr[hi] - sortedArr[lo]) * (idx - lo);
+}
+
+let mcChart;
+const MC_RUNS = 1000;
+
+function runMonteCarlo() {
+  const startBalance = +document.getElementById('sl-mc-start').value;
+  const meanRet = +document.getElementById('sl-mc-ret').value / 100;
+  const stdev = +document.getElementById('sl-mc-vol').value / 100;
+  const wr = +document.getElementById('sl-mc-wr').value / 100;
+  const years = +document.getElementById('sl-mc-years').value;
+  const inflation = +document.getElementById('sl-mc-inf').value / 100;
+
+  document.getElementById('lbl-mc-start').textContent = fmtK(startBalance);
+  document.getElementById('lbl-mc-ret').textContent = (meanRet * 100).toFixed(1) + '%';
+  document.getElementById('lbl-mc-vol').textContent = (stdev * 100).toFixed(0) + '%';
+  document.getElementById('lbl-mc-wr').textContent = (wr * 100).toFixed(2) + '%';
+  document.getElementById('lbl-mc-years').textContent = years;
+  document.getElementById('lbl-mc-inf').textContent = (inflation * 100).toFixed(2) + '%';
+
+  // paths[run][year] = balance at end of year
+  const paths = new Array(MC_RUNS);
+  let successes = 0;
+  const initialWithdrawal = startBalance * wr;
+
+  for (let r = 0; r < MC_RUNS; r++) {
+    const path = new Array(years + 1);
+    let balance = startBalance;
+    let withdrawal = initialWithdrawal;
+    path[0] = balance;
+    let survived = true;
+    for (let y = 1; y <= years; y++) {
+      // Sequence-of-returns risk lives here: a poor draw in year 1
+      // compounds over a much larger base than the same draw later.
+      const annualReturn = meanRet + stdev * randn();
+      balance = balance * (1 + annualReturn) - withdrawal;
+      if (balance < 0) {
+        balance = 0;
+        survived = false;
+      }
+      path[y] = balance;
+      withdrawal *= (1 + inflation);
+    }
+    if (survived && balance > 0) successes++;
+    paths[r] = path;
+  }
+
+  // Compute p10 / p50 / p90 across runs for each year.
+  const p10 = [], p50 = [], p90 = [];
+  for (let y = 0; y <= years; y++) {
+    const slice = new Array(MC_RUNS);
+    for (let r = 0; r < MC_RUNS; r++) slice[r] = paths[r][y];
+    slice.sort((a, b) => a - b);
+    p10.push(percentile(slice, 10));
+    p50.push(percentile(slice, 50));
+    p90.push(percentile(slice, 90));
+  }
+
+  const successRate = (successes / MC_RUNS) * 100;
+  const successEl = document.getElementById('mc-success-num');
+  successEl.textContent = successRate.toFixed(1) + '%';
+  successEl.style.color = successRate >= 90 ? '#4daa7d' : successRate >= 75 ? '#c9a96e' : successRate >= 50 ? '#d4903a' : '#e05252';
+  document.getElementById('mc-success-detail').textContent =
+    `${successes} of ${MC_RUNS} paths survived ${years}y`;
+
+  const labels = Array.from({length: years + 1}, (_, i) => i);
+
+  if (mcChart) mcChart.destroy();
+  mcChart = new Chart(document.getElementById('mcChart'), {
+    type: 'line',
+    data: {
+      labels,
+      datasets: [
+        { label: 'p10', data: p10, borderColor: '#e05252', backgroundColor: 'rgba(224,82,82,0.08)', tension: 0.3, pointRadius: 0, borderWidth: 2, fill: '+1' },
+        { label: 'p50', data: p50, borderColor: '#c9a96e', backgroundColor: 'rgba(201,169,110,0.08)', tension: 0.3, pointRadius: 0, borderWidth: 2.5 },
+        { label: 'p90', data: p90, borderColor: '#4daa7d', backgroundColor: 'rgba(77,170,125,0.08)', tension: 0.3, pointRadius: 0, borderWidth: 2 },
+      ]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      interaction: { mode: 'index', intersect: false },
+      plugins: {
+        legend: { display: false },
+        tooltip: {
+          backgroundColor: '#1a1e28',
+          borderColor: 'rgba(255,255,255,0.1)',
+          borderWidth: 1,
+          titleColor: '#f0ede8',
+          bodyColor: '#8a8d96',
+          padding: 12,
+          callbacks: {
+            label: ctx => '  ' + ctx.dataset.label + ': ' + fmtK(ctx.parsed.y),
+            title: ctx => 'Year ' + ctx[0].label
+          }
+        }
+      },
+      scales: {
+        x: {
+          grid: { color: 'rgba(255,255,255,0.04)' },
+          ticks: { color: '#555a66', font: { size: 11, family: 'DM Mono' }, autoSkip: true, maxTicksLimit: 10 },
+          border: { color: 'rgba(255,255,255,0.07)' },
+          title: { display: true, text: 'Years in retirement', color: '#555a66', font: { size: 11, family: 'DM Mono' } }
+        },
+        y: {
+          min: 0,
+          grid: { color: 'rgba(255,255,255,0.04)' },
+          ticks: { callback: v => fmtK(v), color: '#555a66', font: { size: 11, family: 'DM Mono' } },
+          border: { color: 'rgba(255,255,255,0.07)' }
+        }
+      }
+    }
+  });
+}
+
+document.querySelectorAll('#sl-mc-start, #sl-mc-ret, #sl-mc-vol, #sl-mc-wr, #sl-mc-years, #sl-mc-inf')
+  .forEach(el => el.addEventListener('input', runMonteCarlo));
+
 render();
+runMonteCarlo();
 </script>
 </body>
 </html>
